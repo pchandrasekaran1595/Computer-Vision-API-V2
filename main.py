@@ -15,7 +15,7 @@ class Image(BaseModel):
     imageData: str
 
 
-class Replace(BaseModel):
+class Images(BaseModel):
     imageData_1: str
     imageData_2: str
 
@@ -108,10 +108,19 @@ async def get_depth_infer():
     })
 
 
-@app.get("/face")
+@app.get("/face-detect")
 async def get_face_detect_infer():
     return JSONResponse({
         "statusText" : "Face Detection Inference Endpoint",
+        "statusCode" : status.HTTP_200_OK,
+        "version" : VERSION,
+    })
+
+
+@app.get("/face-recognize")
+async def get_face_detect_infer():
+    return JSONResponse({
+        "statusText" : "Face Recognition Inference Endpoint",
         "statusCode" : status.HTTP_200_OK,
         "version" : VERSION,
     })
@@ -182,7 +191,7 @@ async def post_remove_bg(image: Image):
 
 
 @app.post("/replace")
-async def post_replace_bg(images: Replace):
+async def post_replace_bg(images: Images):
     _, image_1 = decode_image(images.imageData_1)
     _, image_2 = decode_image(images.imageData_2)
 
@@ -216,7 +225,7 @@ async def post_depth_infer(image: Image):
     })
 
 
-@app.post("/face")
+@app.post("/face-detect")
 async def post_face_detect_infer(image: Image):
     _, image = decode_image(image.imageData)
 
@@ -235,5 +244,25 @@ async def post_face_detect_infer(image: Image):
     else:
         return JSONResponse({
             "statusText" : "No Detections",
+            "statusCode" : status.HTTP_500_INTERNAL_SERVER_ERROR,
+        })
+    
+
+@app.post("/face-recognize")
+async def post_face_recognize_infer(images: Images):
+    _, image_1 = decode_image(images.imageData_1)
+    _, image_2 = decode_image(images.imageData_2)
+
+    cs = models[6].get_cosine_similarity(image_1, image_2)
+
+    if cs is not None:
+        return JSONResponse({
+            "statusText" : "Face Recognition Inference Complete",
+            "statusCode" : status.HTTP_200_OK,
+            "cosine_similarity" : str(cs),
+        })
+    else:
+        return JSONResponse({
+            "statusText" : "Possible error in Images; cannot calculate similarity",
             "statusCode" : status.HTTP_500_INTERNAL_SERVER_ERROR,
         })

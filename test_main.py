@@ -85,10 +85,20 @@ def test_get_replace_infer():
 
 
 def test_get_face_detect_infer():
-    response = client.get("/face")
+    response = client.get("/face-detect")
     assert response.status_code == 200
     assert response.json() == {
         "statusText" : "Face Detection Inference Endpoint",
+        "statusCode" : 200,
+        "version" : VERSION,
+    }
+
+
+def test_get_face_recognize_infer():
+    response = client.get("/face-recognize")
+    assert response.status_code == 200
+    assert response.json() == {
+        "statusText" : "Face Recognition Inference Endpoint",
         "statusCode" : 200,
         "version" : VERSION,
     }

@@ -8,6 +8,9 @@ import numpy as np
 import onnxruntime as ort
 
 from PIL import Image
+from typing import Union
+from openvino.runtime import Core
+
 
 ort.set_default_logger_severity(3)
 
@@ -137,6 +140,92 @@ class Model(object):
             temp_image = cv2.cvtColor(src=image.copy(), code=cv2.COLOR_RGB2GRAY)
             detections = self.model.detectMultiScale(image=temp_image, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30), flags=cv2.CASCADE_SCALE_IMAGE)
             return detections
+    
+
+class VINOModel(object):
+    def __init__(self):
+        
+        ie = Core()
+        model_paths: list = [
+            "static/models/fr_detect_model.xml",
+            "static/models/fr_recog_model.xml"
+        ]
+
+        self.d_model = ie.read_model(model=model_paths[0])
+        self.d_model = ie.compile_model(model=self.d_model, device_name="CPU")
+
+        input_layer = next(iter(self.d_model.inputs))
+        self.d_output_layer = next(iter(self.d_model.outputs))
+
+        self.d_H = input_layer.shape[2]
+        self.d_W = input_layer.shape[3]
+
+        self.r_model = ie.read_model(model=model_paths[1])
+        self.r_model = ie.compile_model(model=self.r_model, device_name="CPU")
+
+        input_layer = next(iter(self.r_model.inputs))
+        self.r_output_layer = next(iter(self.r_model.outputs))
+
+        self.r_H = input_layer.shape[1]
+        self.r_W = input_layer.shape[2]
+
+        del input_layer, ie, model_paths
+    
+    def preprocess(self, image: np.ndarray, width: int, height: int, do_transpose: bool=True) -> np.ndarray:
+        if do_transpose:
+            image = cv2.resize(src=image, dsize=(width, height), interpolation=cv2.INTER_AREA).transpose(2, 0, 1)
+        else:
+            image = cv2.resize(src=image, dsize=(width, height), interpolation=cv2.INTER_AREA)
+        return np.expand_dims(image, axis=0)
+    
+    def cosine_similarity(self, a: np.ndarray, b: np.ndarray) -> float:
+        return np.dot(a, b.reshape(-1, 1)) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+    def get_embeddings(self, image: np.ndarray, w: int, h: int, threshold: float=0.9) -> Union[None, np.ndarray]:
+        temp_image = image.copy()
+        result = self.d_model(inputs=[self.preprocess(image, self.d_W, self.d_H)])[self.d_output_layer].squeeze()
+        
+        label_indexes: list = []
+        probs: list = []
+        boxes: list = []
+
+        if result[0][0] == -1:
+            return None   
+        else:
+            for i in range(result.shape[0]):
+                if result[i][0] == -1:
+                    break
+                elif result[i][2] > threshold:
+                    label_indexes.append(int(result[i][1]))
+                    probs.append(result[i][2])
+                    boxes.append([int(result[i][3] * w), \
+                                int(result[i][4] * h), \
+                                int(result[i][5] * w), \
+                                int(result[i][6] * h)])
+                else:
+                    pass
+     
+        if len(boxes) == 0:
+            return None
+        
+        face_frame = temp_image[boxes[0][1]:boxes[0][3], boxes[0][0]:boxes[0][2], :]
+        
+        if face_frame.shape[0] < 32 or face_frame.shape[1] < 32:
+            return None
+        
+        face_frame = self.preprocess(face_frame, self.r_W, self.r_H, do_transpose=False)
+        embeddings = self.r_model(inputs=[face_frame])[self.r_output_layer]
+        return embeddings
+    
+    def get_cosine_similarity(self, image_1: np.ndarray, image_2: np.ndarray) -> Union[float, None]:
+
+        embeddings_1 = self.get_embeddings(image_1, image_1.shape[1], image_1.shape[0])
+        embeddings_2 = self.get_embeddings(image_2, image_2.shape[1], image_2.shape[0])
+
+        if embeddings_1 is not None and embeddings_2 is not None:
+            return self.cosine_similarity(embeddings_1, embeddings_2)[0][0]
+        else:
+            return None
 
 
 def segmenter_decode(class_index_image: np.ndarray) -> np.ndarray:
@@ -189,4 +278,5 @@ models: tuple = (
     Model(infer_type="bg"),
     Model(infer_type="depth"),
     Model(infer_type="face"),
+    VINOModel()
 )

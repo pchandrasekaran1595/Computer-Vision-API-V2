@@ -9,11 +9,12 @@ API served on port `4040`
 **Endpoints**
 
 <pre>
-1. `/classify` - returns highest confidence prediction label
-2. `/detect`   - returns highest confidence bounding box and associated label
-3. `/segment`  - returns list of labels and base64 encoded image data
-4. `/remove`   - returns base64 encoded image data without the background
-5. `/replace`  - returns base64 encoded image data with the replaced background
-6. `/depth`    - base64 encoded depth image data
-7. `/face`     - returns detection bounding boxes
+1. `/classify`       - returns the highest confidence prediction label
+2. `/detect`         - returns the highest confidence bounding box and associated label
+3. `/segment`        - returns a list of labels and base64 encoded image data
+4. `/remove`         - returns a base64 encoded image data without the background
+5. `/replace`        - returns a base64 encoded image data with the replaced background
+6. `/depth`          - returns a base64 encoded depth image data
+7. `/face-detect`    - returns the detection bounding boxes
+8. `/face-recognize` - returns the cosine similarity between two face images
 </pre>
