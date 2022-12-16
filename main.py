@@ -1,3 +1,6 @@
+import re
+
+from typing import Union
 from fastapi import FastAPI, status
 from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
@@ -11,13 +14,13 @@ VERSION: str = "2.0.0"
 STATIC_PATH: str = "static"
 
 
-class Image(BaseModel):
-    imageData: str
+# class Image(BaseModel):
+#     imageData: str
 
 
-class Images(BaseModel):
+class APIData(BaseModel):
     imageData_1: str
-    imageData_2: str
+    imageData_2: Union[str, None] = None
 
 
 origins = [
@@ -54,206 +57,188 @@ async def get_version():
     })
 
 
-@app.get("/classify")
-async def get_classifiy_infer():
-    return JSONResponse({
-        "statusText" : "Classification Inference Endpoint",
-        "statusCode" : status.HTTP_200_OK,
-        "version" : VERSION,
-    })
-
-
-@app.get("/detect")
-async def get_detect_infer():
-    return JSONResponse({
-        "statusText" : "Detection Inference Endpoint",
-        "statusCode" : status.HTTP_200_OK,
-        "version" : VERSION,
-    })
-
-
-@app.get("/segment")
-async def get_segment_infer():
-    return JSONResponse({
-        "statusText" : "Segmentation Inference Endpoint",
-        "statusCode" : status.HTTP_200_OK,
-        "version" : VERSION,
-    })
-
-
-@app.get("/remove")
-async def get_remove_bg():
-    return JSONResponse({
-        "statusText" : "Background Removal Endpoint",
-        "statusCode" : status.HTTP_200_OK,
-        "version" : VERSION,
-    })
-
-
-@app.get("/replace")
-async def get_replace_bg():
-    return JSONResponse({
-        "statusText" : "Background Replacement Endpoint",
-        "statusCode" : status.HTTP_200_OK,
-        "version" : VERSION,
-    })
-
-
-@app.get("/depth")
-async def get_depth_infer():
-    return JSONResponse({
-        "statusText" : "Depth Inference Endpoint",
-        "statusCode" : status.HTTP_200_OK,
-        "version" : VERSION,
-    })
-
-
-@app.get("/face-detect")
-async def get_face_detect_infer():
-    return JSONResponse({
-        "statusText" : "Face Detection Inference Endpoint",
-        "statusCode" : status.HTTP_200_OK,
-        "version" : VERSION,
-    })
-
-
-@app.get("/face-recognize")
-async def get_face_detect_infer():
-    return JSONResponse({
-        "statusText" : "Face Recognition Inference Endpoint",
-        "statusCode" : status.HTTP_200_OK,
-        "version" : VERSION,
-    })
-
-
-@app.post("/classify")
-async def post_classify_infer(image: Image):
-    _, image = decode_image(image.imageData)
-
-    label = models[0].infer(image=image)
-
-    return JSONResponse({
-        "statusText" : "Classification Inference Complete",
-        "statusCode" : status.HTTP_200_OK,
-        "label" : label,
-    })
-
-
-@app.post("/detect")
-async def post_detect_infer(image: Image):
-    _, image = decode_image(image.imageData)
-
-    label, score, box = models[1].infer(image)
-
-    if label is not None:
+@app.get("/{infer_type}")
+async def get_infer(infer_type: str):
+    if re.match(r"^classify$", infer_type, re.IGNORECASE):
         return JSONResponse({
-            "statusText" : "Detection Inference Complete",
+            "statusText" : "Classification Inference Endpoint",
+            "statusCode" : status.HTTP_200_OK,
+            "version" : VERSION,
+        })
+    
+    elif re.match(r"^detect$", infer_type, re.IGNORECASE):
+        return JSONResponse({
+            "statusText" : "Detection Inference Endpoint",
+            "statusCode" : status.HTTP_200_OK,
+            "version" : VERSION,
+        })
+    
+    elif re.match(r"^segment$", infer_type, re.IGNORECASE):
+        return JSONResponse({
+            "statusText" : "Segmentation Inference Endpoint",
+            "statusCode" : status.HTTP_200_OK,
+            "version" : VERSION,
+        })
+    
+    elif re.match(r"^remove$", infer_type, re.IGNORECASE):
+        return JSONResponse({
+            "statusText" : "Background Removal Endpoint",
+            "statusCode" : status.HTTP_200_OK,
+            "version" : VERSION,
+        })
+    
+    elif re.match(r"^replace$", infer_type, re.IGNORECASE):
+        return JSONResponse({
+            "statusText" : "Background Replacement Endpoint",
+            "statusCode" : status.HTTP_200_OK,
+            "version" : VERSION,
+        })
+    
+    elif re.match(r"^depth$", infer_type, re.IGNORECASE):
+        return JSONResponse({
+            "statusText" : "Depth Inference Endpoint",
+            "statusCode" : status.HTTP_200_OK,
+            "version" : VERSION,
+        })
+    
+    elif re.match(r"^face-detect$", infer_type, re.IGNORECASE):
+        return JSONResponse({
+            "statusText" : "Face Detection Inference Endpoint",
+            "statusCode" : status.HTTP_200_OK,
+            "version" : VERSION,
+        })
+    
+    elif re.match(r"^face-recognize$", infer_type, re.IGNORECASE):
+        return JSONResponse({
+            "statusText" : "Face Recognition Inference Endpoint",
+            "statusCode" : status.HTTP_200_OK,
+            "version" : VERSION,
+        })
+    
+    else:
+        return JSONResponse({
+            "statusText" : f"{infer_type.title()} is Invalid",
+            "statusCode" : status.HTTP_400_BAD_REQUEST,
+            "version" : VERSION,
+        })
+
+
+@app.post("/{infer_type}")
+async def post_infer(infer_type: str, images: APIData):
+
+    if re.match(r"^classify$", infer_type, re.IGNORECASE):
+        _, image = decode_image(images.imageData_1)
+
+        label = models[0].infer(image=image)
+
+        return JSONResponse({
+            "statusText" : "Classification Inference Complete",
             "statusCode" : status.HTTP_200_OK,
             "label" : label,
-            "score" : str(score),
-            "box" : box,
         })
-    else:
-        return JSONResponse({
-            "statusText" : "No Detections",
-            "statusCode" : 500,
-        })
-
-
-@app.post("/segment")
-async def post_segment_infer(image: Image):
-    _, image = decode_image(image.imageData)
-
-    segmented_image, labels = models[2].infer(image)
     
-    return JSONResponse({
-        "statusText" : "Segmentation Inference Complete",
-        "statusCode" : status.HTTP_200_OK,
-        "labels" : labels,
-        "imageData" : encode_image_to_base64(image=segmented_image)
-    })
+    elif re.match(r"^detect$", infer_type, re.IGNORECASE):
+        _, image = decode_image(images.imageData_1)
 
+        label, score, box = models[1].infer(image)
 
-@app.post("/remove")
-async def post_remove_bg(image: Image):
-    _, image = decode_image(image.imageData)
+        if label is not None:
+            return JSONResponse({
+                "statusText" : "Detection Inference Complete",
+                "statusCode" : status.HTTP_200_OK,
+                "label" : label,
+                "score" : str(score),
+                "box" : box,
+            })
+        else:
+            return JSONResponse({
+                "statusText" : "No Detections",
+                "statusCode" : status.HTTP_500_INTERNAL_SERVER_ERROR,
+            })
+        
+    elif re.match(r"^segment$", infer_type, re.IGNORECASE):
+        _, image = decode_image(images.imageData_1)
 
-    mask = models[3].infer(image=image)
-    for i in range(3): image[:, :, i] = image[:, :, i] & mask
-
-    return JSONResponse({
-        "statusText" : "Background Removal Complete",
-        "statusCode" : status.HTTP_200_OK,
-        "version" : VERSION,
-        "maskImageData" : encode_image_to_base64(image=mask),
-        "bglessImageData" : encode_image_to_base64(image=image),
-    })
-
-
-@app.post("/replace")
-async def post_replace_bg(images: Images):
-    _, image_1 = decode_image(images.imageData_1)
-    _, image_2 = decode_image(images.imageData_2)
-
-    mask = models[3].infer(image=image_1)
-    mh, mw = mask.shape
-    image_2 = preprocess_replace_bg_image(image_2, mw, mh)
-    for i in range(3): 
-        image_1[:, :, i] = image_1[:, :, i] & mask
-        image_2[:, :, i] = image_2[:, :, i] & (255 - mask) 
-
-    image_2 += image_1   
-
-    return JSONResponse({
-        "statusText" : "Background Removal Complete",
-        "statusCode" : status.HTTP_200_OK,
-        "version" : VERSION,
-        "bgreplaceImageData" : encode_image_to_base64(image=image_2),
-    })
-
-
-@app.post("/depth")
-async def post_depth_infer(image: Image):
-    _, image = decode_image(image.imageData)
-
-    image = models[4].infer(image=image)
-
-    return JSONResponse({
-        "statusText" : "Depth Inference Complete",
-        "statusCode" : status.HTTP_200_OK,
-        "imageData" : encode_image_to_base64(image=image),
-    })
-
-
-@app.post("/face-detect")
-async def post_face_detect_infer(image: Image):
-    _, image = decode_image(image.imageData)
-
-    face_detections_np = models[5].infer(image)
-
-    if len(face_detections_np) > 0:
-        face_detections: list = []
-        for (x, y, w, h) in face_detections_np:
-            face_detections.append([int(x), int(y), int(w), int(h)])
+        segmented_image, labels = models[2].infer(image)
         
         return JSONResponse({
-            "statusText" : "Face Detection Complete",
+            "statusText" : "Segmentation Inference Complete",
             "statusCode" : status.HTTP_200_OK,
-            "face_detections" : face_detections,
-        })
-    else:
-        return JSONResponse({
-            "statusText" : "No Detections",
-            "statusCode" : status.HTTP_500_INTERNAL_SERVER_ERROR,
+            "labels" : labels,
+            "imageData" : encode_image_to_base64(image=segmented_image)
         })
     
+    elif re.match(r"^remove$", infer_type, re.IGNORECASE):
+        _, image = decode_image(images.imageData_1)
 
-@app.post("/face-recognize")
-async def post_face_recognize_infer(images: Images):
-    _, image_1 = decode_image(images.imageData_1)
-    _, image_2 = decode_image(images.imageData_2)
+        mask = models[3].infer(image=image)
+        for i in range(3): image[:, :, i] = image[:, :, i] & mask
 
-    cs = models[6].get_cosine_similarity(image_1, image_2)
+        return JSONResponse({
+            "statusText" : "Background Removal Complete",
+            "statusCode" : status.HTTP_200_OK,
+            "version" : VERSION,
+            "maskImageData" : encode_image_to_base64(image=mask),
+            "bglessImageData" : encode_image_to_base64(image=image),
+        })
+    
+    elif re.match(r"^replace$", infer_type, re.IGNORECASE):
+        _, image_1 = decode_image(images.imageData_1)
+        _, image_2 = decode_image(images.imageData_2)
+
+        mask = models[3].infer(image=image_1)
+        mh, mw = mask.shape
+        image_2 = preprocess_replace_bg_image(image_2, mw, mh)
+        for i in range(3): 
+            image_1[:, :, i] = image_1[:, :, i] & mask
+            image_2[:, :, i] = image_2[:, :, i] & (255 - mask) 
+
+        image_2 += image_1   
+
+        return JSONResponse({
+            "statusText" : "Background Removal Complete",
+            "statusCode" : status.HTTP_200_OK,
+            "version" : VERSION,
+            "bgreplaceImageData" : encode_image_to_base64(image=image_2),
+        })
+    
+    elif re.match(r"^depth$", infer_type, re.IGNORECASE):
+        _, image = decode_image(images.imageData_1)
+
+        image = models[4].infer(image=image)
+
+        return JSONResponse({
+            "statusText" : "Depth Inference Complete",
+            "statusCode" : status.HTTP_200_OK,
+            "imageData" : encode_image_to_base64(image=image),
+        })
+    
+    elif re.match(r"^face-detect$", infer_type, re.IGNORECASE):
+        _, image = decode_image(images.imageData_1)
+
+        face_detections_np = models[5].infer(image)
+
+        if len(face_detections_np) > 0:
+            face_detections: list = []
+            for (x, y, w, h) in face_detections_np:
+                face_detections.append([int(x), int(y), int(w), int(h)])
+            
+            return JSONResponse({
+                "statusText" : "Face Detection Complete",
+                "statusCode" : status.HTTP_200_OK,
+                "face_detections" : face_detections,
+            })
+        else:
+            return JSONResponse({
+                "statusText" : "No Detections",
+                "statusCode" : status.HTTP_500_INTERNAL_SERVER_ERROR,
+            })
+    
+    elif re.match(r"^face-recognize$", infer_type, re.IGNORECASE):
+        _, image_1 = decode_image(images.imageData_1)
+        _, image_2 = decode_image(images.imageData_2)
+
+        cs = models[6].get_cosine_similarity(image_1, image_2)
 
     if cs is not None:
         return JSONResponse({
@@ -263,6 +248,6 @@ async def post_face_recognize_infer(images: Images):
         })
     else:
         return JSONResponse({
-            "statusText" : "Possible error in Images; cannot calculate similarity",
+            "statusText" : "Possible error in APIData; cannot calculate similarity",
             "statusCode" : status.HTTP_500_INTERNAL_SERVER_ERROR,
         })
