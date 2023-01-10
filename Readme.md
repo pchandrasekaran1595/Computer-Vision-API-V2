@@ -10,7 +10,7 @@ API served on port `4040`
 
 <pre>
 1. /classify       - returns the highest confidence prediction label
-2. /detect`        - returns the highest confidence bounding box and associated label
+2. /detect         - returns the highest confidence bounding box and associated label
 3. /segment        - returns a list of labels and base64 encoded image data
 4. /remove         - returns a base64 encoded image data without the background
 5. /replace        - returns a base64 encoded image data with the replaced background
