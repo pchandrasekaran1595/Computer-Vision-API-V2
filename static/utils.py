@@ -258,7 +258,7 @@ def softmax(x) -> float:
 def decode_image(imageData) -> np.ndarray:
     header, imageData = imageData.split(",")[0], imageData.split(",")[1]
     image = np.array(Image.open(io.BytesIO(base64.b64decode(imageData))))
-    image = cv2.cvtColor(src=image, code=cv2.COLOR_BGRA2RGB)
+    image = image[:, :, :4]
     return header, image
 
 
