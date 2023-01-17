@@ -1,6 +1,6 @@
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu/focal64"
-  config.vm.box_version = "~> "
+  config.vm.box_version = "~> 20230111.0.0"
   config.vm.boot_timeout = 900
   
   config.vm.provider "virtualbox" do |v|
@@ -15,6 +15,7 @@ Vagrant.configure("2") do |config|
     systemctl disable apt-daily.timer
     
     sudo apt-get update -y
+    sudo apt-get upgrade -y
     sudo apt-get install python3-venv python3-opencv zip -y
   SHELL
 end
