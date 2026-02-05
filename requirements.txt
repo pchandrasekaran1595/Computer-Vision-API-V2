@@ -4,7 +4,7 @@ gunicorn
 onnx==1.17.0
 pillow==10.3.0
 onnxruntime==1.13.1
-protobuf==4.25.8
+protobuf==5.29.6
 pytest==7.1.2
 opencv-python-headless
 openvino==2022.2.0
