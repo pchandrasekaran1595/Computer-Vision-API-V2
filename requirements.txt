@@ -1,7 +1,7 @@
 fastapi[all]
 uvicorn[standard]
 gunicorn
-onnx==1.21.0
+onnx==1.22.0
 pillow==10.3.0
 onnxruntime==1.13.1
 protobuf==5.29.6
